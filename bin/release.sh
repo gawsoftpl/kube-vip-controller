@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-CHART_FILE="helm-charts/kube-vip-controller/Chart.yaml"
+CHART_FILE="charts/kube-vip-controller/Chart.yaml"
 VERSION_TYPE=${1:-patch}  # default to patch if not provided
 
 if [[ ! -f "$CHART_FILE" ]]; then
