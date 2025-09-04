@@ -1,7 +1,7 @@
 .PHONY: tls build cluster k8s-manifest mirrord dev phone
 
 build:
-	go build -ldflags="-s -w" -o kube-vip-webhook main.go
+	go build -ldflags="-s -w" -o kube-vip-controller main.go
 
 cluster:
 	scripts/cluster.sh

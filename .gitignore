@@ -1,4 +1,5 @@
 /main
 /tls
-/kube-vip-webhook
+/kube-vip-controller
 /tmp
+/dist

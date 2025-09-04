@@ -1,13 +1,14 @@
 # Kube-vip controller
-This is a kube-vip controller which will listen for change new lease of kube-vip.
-When received event from api-server that lease has changed will send http request to a daemonset.
-This controller can be use for all cloud networks.
+This is a kube-vip controller that listens for changes in the kube-vip lease.
+When it receives an event from the API server indicating that the lease has changed, it sends an HTTP request to a DaemonSet.
+This controller can be used for any cloud network.
 
-Example: 
-- In hetzner hcloud during change private network ip this cloud require send request for set alias ip in hcloud api. 
-- Headscale during change advertise route require change it in headscale server.
+Use case:
+- In Hetzner Cloud (hcloud), when a private network IP changes, the cloud requires sending a request to set an alias IP via the hcloud API.
+- In Headscale, when the advertised route changes, it must be updated in the Headscale server.
 
-This is a only kube-vip-controller. Daemonset you have to write you own. Use this as strategy for end notification to your cloud, when you want to detect change lease of kube-vip.
+This is only the kube-vip controller. You need to create your own DaemonSet. Use this controller as a strategy to send notifications to your cloud whenever you want to detect a kube-vip lease change.
+
 
 ![alt text](image.jpg)
 
