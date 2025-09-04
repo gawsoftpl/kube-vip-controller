@@ -7,7 +7,7 @@ Use case:
 - In Hetzner Cloud (hcloud), when a private network IP changes, the cloud requires sending a request to set an alias IP via the hcloud API.
 - In Headscale, when the advertised route changes, it must be updated in the Headscale server.
 
-This is only the kube-vip controller. You need to create your own DaemonSet. Use this controller as a strategy to send notifications to your cloud whenever you want to detect a kube-vip lease change.
+This is only the kube-vip controller. You need to create your own DaemonSet. Use this controller as a strategy to send notifications to your cloud whenever you want to detect a kube-vip lease change. Why DaemonSet (because DaemonSet has access to host interface). 
 
 
 ![alt text](image.jpg)
