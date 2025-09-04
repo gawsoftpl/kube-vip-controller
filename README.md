@@ -41,7 +41,7 @@ Options:
 # Install
 
 ```sh
-docker run -it --rm gawsoftpl/kube-vip-controller
+docker run -it --rm ghcr.io/gawsoftpl/kube-vip-controller
 ```
 
 # Development
