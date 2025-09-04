@@ -274,8 +274,12 @@ func sendLeaseRequest(podIp string, LeaseName string) error {
 			if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 				fmt.Println("Request successful:", string(body))
 				return nil
-			} else {
-				fmt.Printf("Attempt %d: server returned status %d: %s\n", retryCounter, resp.StatusCode, string(body))
+			}
+
+			fmt.Printf("Attempt %d: server returned status %d: %s\n", retryCounter, resp.StatusCode, string(body))
+
+			if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+				return nil
 			}
 		}
 
