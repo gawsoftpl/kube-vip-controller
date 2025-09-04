@@ -122,11 +122,27 @@ jobs:
     #       -t $IMAGE_NAME:latest \
     #       --push \
     #       .
-          
-    - name: Build and push image
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        platforms: linux/amd64,linux/arm64,windows/amd64,windows/arm64,darwin/amd64,darwin/arm64
-        push: true
-        tags: ${{ env.IMAGE_NAME }}:${{ env.TAG }},${{ env.IMAGE_NAME }}:latest
+    - name: Build and push per-arch images
+      run: |
+        TAG=${GITHUB_REF#refs/tags/}
+        ARCHS=("linux/amd64" "linux/arm64" "darwin/amd64" "darwin/arm64" "windows/amd64")
+        for PLATFORM in "${ARCHS[@]}"; do
+          OS=$(echo $PLATFORM | cut -d'/' -f1)
+          ARCH=$(echo $PLATFORM | cut -d'/' -f2)
+          IMAGE_TAG=$IMAGE_NAME-$OS-$ARCH:$TAG
+          docker buildx build \
+            --platform $PLATFORM \
+            --build-arg TARGETOS=$OS \
+            --build-arg TARGETARCH=$ARCH \
+            -t $IMAGE_TAG \
+            --push \
+            .
+        done
+
+    # - name: Build and push image
+    #   uses: docker/build-push-action@v6
+    #   with:
+    #     context: .
+    #     platforms: linux/amd64,linux/arm64,windows/amd64,windows/arm64,darwin/amd64,darwin/arm64
+    #     push: true
+    #     tags: ${{ env.IMAGE_NAME }}:${{ env.TAG }},${{ env.IMAGE_NAME }}:latest
