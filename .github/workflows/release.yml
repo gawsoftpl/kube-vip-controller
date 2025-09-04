@@ -4,9 +4,9 @@ permissions:
   contents: write
 
 on:
-  push:
-    tags:
-      - 'v*'  # Trigger on version tags like v1.0.0
+   push:
+#     tags:
+#       - 'v*'  # Trigger on version tags like v1.0.0
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/kube-vip-controller
@@ -36,8 +36,9 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             OUTPUT_NAME="${OUTPUT_NAME}.exe"
           fi
-          mkdir -p dist
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/${OUTPUT_NAME} ./...
+          mkdir -p dist/${{ matrix.goos }}-${{ matrix.goarch }}
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/${{ matrix.goos }}-${{ matrix.goarch }}/$OUTPUT_NAME ./...
+
 
       - name: List files
         run: ls -l dist
@@ -45,75 +46,75 @@ jobs:
       - name: Upload binaries as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist/
+          name: dist-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/${{ matrix.goos }}-${{ matrix.goarch }}
 
-  release:
-    name: Create GitHub Release
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  # release:
+  #   name: Create GitHub Release
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist
+  #     - name: Download build artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: dist
+  #         path: dist
 
-      - name: Extract tag
-        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
+  #     - name: Extract tag
+  #       run: echo "TAG=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ env.TAG }}
-          name: Release ${{ env.TAG }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Create GitHub Release
+  #       id: create_release
+  #       uses: softprops/action-gh-release@v1
+  #       with:
+  #         tag_name: ${{ env.TAG }}
+  #         name: Release ${{ env.TAG }}
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
-        with:
-          files: dist/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Upload Release Assets
+  #       uses: softprops/action-gh-release@v1
+  #       with:
+  #         files: dist/*
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  container:
-    name: Build & Push container Image
-    runs-on: ubuntu-latest
+  # container:
+  #   name: Build & Push container Image
+  #   runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      packages: write
+  #   permissions:
+  #     contents: read
+  #     packages: write
 
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v4
+  #   steps:
+  #   - name: Checkout source
+  #     uses: actions/checkout@v4
 
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+  #   - name: Log in to GitHub Container Registry
+  #     uses: docker/login-action@v3
+  #     with:
+  #       registry: ghcr.io
+  #       username: ${{ github.actor }}
+  #       password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract tag
-      id: extract_tag
-      run: echo "TAG=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
+  #   - name: Extract tag
+  #     id: extract_tag
+  #     run: echo "TAG=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
 
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+  #   - name: Set up QEMU
+  #     uses: docker/setup-qemu-action@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+  #   - name: Set up Docker Buildx
+  #     uses: docker/setup-buildx-action@v3
 
-    - name: Build and push image
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        platforms: linux/amd64,linux/arm64,windows/amd64,windows/arm64,darwin/amd64,darwin/arm64
-        push: true
-        tags: ${{ env.IMAGE_NAME }}:${{ env.TAG }},${{ env.IMAGE_NAME }}:latest
+  #   - name: Build and push image
+  #     uses: docker/build-push-action@v6
+  #     with:
+  #       context: .
+  #       platforms: linux/amd64,linux/arm64,windows/amd64,windows/arm64,darwin/amd64,darwin/arm64
+  #       push: true
+  #       tags: ${{ env.IMAGE_NAME }}:${{ env.TAG }},${{ env.IMAGE_NAME }}:latest
