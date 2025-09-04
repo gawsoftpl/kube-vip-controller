@@ -47,7 +47,7 @@ docker run -it --rm ghcr.io/gawsoftpl/kube-vip-controller
 ```sh
 helm repo add kube-vip-controller https://gawsoftpl.github.io/kube-vip-controller
 helm repo update
-helm install kube-vip-controller kube-vip-controller/kube-vip-controller
+helm upgrade --install kube-vip-controller kube-vip-controller/kube-vip-controller
 ```
 
 # Development

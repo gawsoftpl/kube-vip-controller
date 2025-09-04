@@ -44,10 +44,11 @@ var (
 
 	endpoint string
 
-	kubeVipLeaseName string
-	namespace        string
-	daemonSetName    string
-	clientSet        *kubernetes.Clientset
+	kubeVipLeaseName   string
+	namespace          string
+	daemonSetName      string
+	clientSet          *kubernetes.Clientset
+	downloadFirstLease bool = false
 )
 
 func main() {
@@ -107,10 +108,7 @@ func main() {
 
 	// Start http server
 	go func() {
-		http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("ok"))
-		})
+		http.HandleFunc("/healthz", healthHandler)
 		http.HandleFunc("/info", actualLeaseHandler)
 		fmt.Println("HTTP server listening on", endpoint)
 		if err := http.ListenAndServe(endpoint, nil); err != nil {
@@ -221,11 +219,12 @@ func getK8sClient() (*kubernetes.Clientset, error) {
 func getCurrentLeaseHolder() (*coordinationv1.Lease, error) {
 	fmt.Println("Try to get actual Lease holder for:", kubeVipLeaseName)
 
-	lease, err := clientSet.CoordinationV1().Leases("kube-system").Get(
+	lease, err := clientSet.CoordinationV1().Leases(namespace).Get(
 		context.TODO(),
 		kubeVipLeaseName,
 		metav1.GetOptions{},
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get kube-vip lease: %w", err)
 	}
@@ -290,6 +289,16 @@ func sendLeaseRequest(podIp string, LeaseName string) error {
 
 }
 
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	if !downloadFirstLease {
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	}
+
+}
+
 func actualLeaseHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := LeaseInfo{
@@ -312,10 +321,12 @@ func actualLeaseHandler(w http.ResponseWriter, r *http.Request) {
 
 func checkActualLease() {
 	lease, err := getCurrentLeaseHolder()
+	print(err)
 	if err != nil {
 		log.Println("Cant get current Lease holder", err)
 		return
 	}
+	downloadFirstLease = true
 	onLeaseHandlerChanged(lease)
 }
 
@@ -327,6 +338,7 @@ func getEnv(key, defaultVal string) string {
 }
 
 func onLeaseHandlerChanged(lease *coordinationv1.Lease) error {
+	downloadFirstLease = true
 	actualHolder = holderAsString(lease)
 	acquireTime = lease.Spec.AcquireTime.Unix()
 	actualHolderChangedCounter++
@@ -368,22 +380,25 @@ func watchLease() {
 		AddFunc: func(obj interface{}) {
 			lease := obj.(*coordinationv1.Lease)
 			fmt.Printf("[ADDED] Lease %s holder=%v\n", lease.Name, *lease.Spec.HolderIdentity)
-			onLeaseHandlerChanged(lease)
+			if lease.Name == kubeVipLeaseName {
+				onLeaseHandlerChanged(lease)
+			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			oldLease := oldObj.(*coordinationv1.Lease)
 			newLease := newObj.(*coordinationv1.Lease)
+			if kubeVipLeaseName == newLease.Name {
 
-			newHolderIdentity := holderAsString(newLease)
-			oldHolderIdentity := holderAsString(oldLease)
+				newHolderIdentity := holderAsString(newLease)
+				oldHolderIdentity := holderAsString(oldLease)
 
-			// porównanie: HolderIdentity albo RenewTime
-			if oldHolderIdentity != newHolderIdentity ||
-				!renewTimeEqual(oldLease.Spec.AcquireTime, newLease.Spec.AcquireTime) {
-				fmt.Printf("[CHANGED] Lease %s holder=%s AcquireTime=%v\n",
-					newLease.Name, newHolderIdentity, newLease.Spec.AcquireTime)
-				onLeaseHandlerChanged(newLease)
-
+				// porównanie: HolderIdentity albo RenewTime
+				if oldHolderIdentity != newHolderIdentity ||
+					!renewTimeEqual(oldLease.Spec.AcquireTime, newLease.Spec.AcquireTime) {
+					fmt.Printf("[CHANGED] Lease %s holder=%s AcquireTime=%v\n",
+						newLease.Name, newHolderIdentity, newLease.Spec.AcquireTime)
+					onLeaseHandlerChanged(newLease)
+				}
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
@@ -395,7 +410,7 @@ func watchLease() {
 	stop := make(chan struct{})
 	defer close(stop)
 
-	fmt.Println("Startuję kontroler...")
+	fmt.Println("Starting...")
 	informer.Run(stop)
 
 }
