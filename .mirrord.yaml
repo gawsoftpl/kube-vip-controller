@@ -1,0 +1,12 @@
+target:
+  path: deployment/kube-vip-controller
+  namespace: kube-system
+
+# # Mirror TCP traffic on port 8443 to the local process
+feature:
+  network:
+    outgoing:
+      ignore_localhost: false
+    incoming:
+      mode: steal
+      ignore_localhost: true

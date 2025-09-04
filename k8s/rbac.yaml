@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-vip-controller
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kube-vip-controller-role
+  namespace: kube-system 
+rules:
+  # Read leases
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch"]
+
+  # Read pods
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+
+  # Read daemonsets
+  - apiGroups: ["apps"]
+    resources: ["daemonsets"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kube-vip-controller-rolebinding
+  namespace: kube-system
+subjects:
+  - kind: ServiceAccount
+    name: kube-vip-controller   # this should match the ServiceAccount your pod uses
+    namespace: kube-system
+roleRef:
+  kind: Role
+  name: kube-vip-controller-role
+  apiGroup: rbac.authorization.k8s.io

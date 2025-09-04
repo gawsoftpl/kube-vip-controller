@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-vip-cp-change-lease
+  namespace: kube-system
+  labels:
+    app: kube-vip-cp-change-lease
+spec:
+  selector:
+    matchLabels:
+      app: kube-vip-cp-change-lease
+  template:
+    metadata:
+      labels:
+        app: kube-vip-cp-change-lease
+    spec:
+      hostNetwork: true
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+
+      containers:
+        - name: webhook
+          image: mendhak/http-https-echo
+          ports:
+            - containerPort: 8080
+              name: http
+      # Optional: tolerations if you want it on all nodes including masters
+      # tolerations:
+      # - key: "node-role.kubernetes.io/master"
+      #   effect: "NoSchedule"
