@@ -11,8 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goos: [linux, darwin, windows]
-        goarch: [amd64, arm64]
+        # goos: [linux, darwin, windows]
+        # goarch: [amd64, arm64]
+        goos: [linux]
+        goarch: [amd64]
 
     steps:
       - name: Checkout code
@@ -41,15 +43,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Get built binaries
-        uses: actions/download-artifact@v3
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist
 
-      - name: Create Release
+      - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
@@ -61,7 +63,7 @@ jobs:
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/* 
+          files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -82,7 +84,14 @@ jobs:
 
       - name: Build Docker image
         run: |
+          # Extract tag from GitHub ref
           TAG=${GITHUB_REF#refs/tags/}
+          if [ -z "$TAG" ]; then
+            echo "No tag found, using 'latest'"
+            TAG=latest
+          fi
+
+          echo "Building Docker image $IMAGE_NAME:$TAG"
           docker build -t $IMAGE_NAME:$TAG .
           docker tag $IMAGE_NAME:$TAG $IMAGE_NAME:latest
 
