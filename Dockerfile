@@ -1,30 +1,29 @@
-# Etap 1: Build
-FROM golang:1.24-alpine AS builder
+# Use a multi-platform builder stage
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS builder
 
-# Instalacja wymaganych pakietów (libsodium-dev + git)
-RUN apk add --no-cache git build-base
+# Set target OS and ARCH for cross-compilation
+ARG TARGETOS=linux
+ARG TARGETARCH
 
-# Ustaw katalog roboczy
-WORKDIR /app
+# Set working directory
+WORKDIR /workspace
 
-# Skopiuj go.mod i go.sum (dla cache)
+# Copy go mod files and download dependencies
 COPY go.mod go.sum ./
-
-# Pobierz zależności
 RUN go mod download
 
-# Skopiuj resztę źródeł
+# Copy the source code
 COPY . .
 
-# Build statycznej binarki
-RUN CGO_ENABLED=1 GOOS=linux go build -o kube-vip-webhook main.go
+# Build the binary with cross-compilation support
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -ldflags="-s -w" -o kube-vip-controller main.go
 
-# Etap 2: Minimalny runtime
-FROM alpine:latest
+# Use scratch for the runtime image (suitable for Linux; may not run on Windows/Darwin but can be built for binary extraction)
+FROM scratch
 
-# Skopiuj binarkę z etapu build
-COPY --from=builder /app/kube-vip-webhook /usr/local/bin/kube-vip-webhook
+# Copy the built binary
+COPY --from=builder /workspace/kube-vip-controller /
 
-# Ustaw entrypoint
-ENTRYPOINT ["/usr/local/bin/kube-vip-webhook"]
-
+# Set entrypoint
+ENTRYPOINT ["/kube-vip-controller"]
