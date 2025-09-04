@@ -84,20 +84,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  helm:
-    name: Package & Push Helm Chart to GHCR
-    permissions:
-      contents: write
-      packages: write
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v2
-      - name: Publish Helm charts
-        uses: stefanprodan/helm-gh-pages@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
   container:
+    needs: build
     name: Build & Push container Image
     runs-on: ubuntu-latest
 
@@ -133,3 +121,18 @@ jobs:
         platforms: linux/amd64,linux/arm64,windows/amd64,windows/arm64,darwin/amd64,darwin/arm64
         push: true
         tags: ${{ env.IMAGE_NAME }}:${{ env.TAG }},${{ env.IMAGE_NAME }}:latest
+
+
+  helm:
+    name: Package & Push Helm Chart to GHCR
+    needs: container
+    permissions:
+      contents: write
+      packages: write
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Publish Helm charts
+        uses: stefanprodan/helm-gh-pages@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
