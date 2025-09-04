@@ -17,3 +17,6 @@ mirrord:
 
 dev:
 	air
+
+release:
+	bin/release.sh
