@@ -115,6 +115,30 @@ autoscaling:
 # Additional env variables
 env: []
 
+# Extends envFrom 
+envFromExtends: []
+# envFromExtends:
+#   - configMapRef:
+#       name: "my-custom-envs"
+
+# Add additional containers to deployment
+sidecars: []
+# sidecars:
+#   - name: log-collector
+#     image: busybox:1.36
+#     command: ["/bin/sh", "-c"]
+#     args: ["while true; do echo 'collecting logs'; sleep 60; done"]
+#     envFrom:
+#       - configMapRef:
+#           name: "aaa"
+#     resources:
+#       limits:
+#         cpu: 100m
+#         memory: 128Mi
+#       requests:
+#         cpu: 50m
+#         memory: 64Mi
+
 # Additional volumes on the output Deployment definition.
 volumes: []
 # - name: foo
