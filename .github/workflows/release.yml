@@ -60,8 +60,9 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          pattern: dist-*   # pobierze wszystkie np. dist-linux-amd64, dist-darwin-arm64
           path: dist
+          merge-multiple: true
 
       - name: Extract tag
         run: echo "TAG=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
