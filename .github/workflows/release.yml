@@ -1,9 +1,16 @@
 name: Build and Release
 
+permissions:
+  contents: write
+
 on:
   push:
     tags:
       - 'v*'  # Trigger on version tags like v1.0.0
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/kube-vip-controller
+  PROJECT_NAME: kube-vip-controller
 
 jobs:
   build:
@@ -27,7 +34,7 @@ jobs:
 
       - name: Build binary
         run: |
-          OUTPUT_NAME=kube-vip-controller
+          OUTPUT_NAME=$PROJECT_NAME
           if [ "${{ matrix.goos }}" = "windows" ]; then
             OUTPUT_NAME="${OUTPUT_NAME}.exe"
           fi
