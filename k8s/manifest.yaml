@@ -41,12 +41,14 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
         - name: webhook
-          #image: busybox:latest
-          # command:
-          #   - /bin/sh
-          #   - -c
-          #   - "tail -f /dev/null"
-          image: kube-vip-controller
+          image: busybox:latest
+          command:
+            - /bin/sh
+            - -c
+            - "tail -f /dev/null"
+          
+          # Use kube-vip-controller when load image with kind cluster
+          #image: kube-vip-controller
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
