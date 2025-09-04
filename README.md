@@ -14,7 +14,7 @@ This is only the kube-vip controller. You need to create your own DaemonSet. Use
 
 # Features
 - Controller listen for change Leader of kube-vip (Lease).
-- If lease has changed, try to find daemonset for new lease (node).
+- If lease has changed, try to find daemonset running in new lease (node).
 - If not find daemonset on that node will try every 5s to find daemonset until lease change again.
 - If daemonset http server do not return code 200 will try until lease change every 2s.
 
