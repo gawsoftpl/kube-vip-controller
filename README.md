@@ -9,8 +9,8 @@ Use case:
 
 
 This controller run in 2 mode. 
-1. **DaemonSet** - When lease change can find DaemonSet on lease node or send simple request  
-2. **Service** - When lease change send http request (can add as sidecar in helm cahrt)
+1. **DaemonSet** - When lease change controller try to find DaemonSet on lease node and send simple request  
+2. **Service** - When lease change send http request to service (can add as sidecar in helm cahrt)
 
 Use this controller as a strategy to send notifications to your cloud provider whenever you want when detect a kube-vip lease change.
 
