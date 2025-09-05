@@ -85,7 +85,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   container:
-    needs: build
+    needs: release
     name: Build & Push container Image
     runs-on: ubuntu-latest
 

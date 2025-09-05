@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-service-example
+spec:
+  ports:
+    - port: 8080
+      name: http
+      protocol: TCP
+  selector:
+    app: kube-service-example
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-service-example
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kube-service-example
+  template:
+    metadata:
+      labels:
+        app: kube-service-example
+    spec:
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+      containers:
+        - name: webhook
+          image: mendhak/http-https-echo
+          ports:
+            - containerPort: 8080
+              name: http

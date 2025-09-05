@@ -1,13 +1,19 @@
 # Kube-vip controller
 This is a kube-vip controller that listens for changes in the kube-vip lease.
-When it receives an event from the API server indicating that the lease has changed, it sends an HTTP request to a DaemonSet.
+When it receives an event from the API server indicating that the lease has changed, it sends an HTTP request to a DaemonSet/Service.
 This controller can be used for any cloud network.
 
 Use case:
 - In Hetzner Cloud (hcloud), when a private network IP changes, the cloud requires sending a request to set an alias IP via the hcloud API.
 - In Headscale, when the advertised route changes, it must be updated in the Headscale server.
 
-This is only the kube-vip controller. You need to create your own DaemonSet. Use this controller as a strategy to send notifications to your cloud whenever you want to detect a kube-vip lease change. Why DaemonSet (because DaemonSet has access to host interface). 
+This is only the kube-vip controller. 
+
+This controller run in 2 mode. 
+1. **DaemonSet** - When lease change can find DaemonSet on lease node or send simple request  
+2. **Service** - When lease change send http request (can add as sidecar in helm cahrt)
+
+Use this controller as a strategy to send notifications to your cloud provider whenever you want when detect a kube-vip lease change.
 
 
 ![alt text](image.jpg)
@@ -22,20 +28,22 @@ This is only the kube-vip controller. You need to create your own DaemonSet. Use
 ```
 Options:
   -daemonset_name string
-        Deamonset name for find to send webhook when lease change, default: kube-vip-cp-change-lease (default "kube-vip-cp-change-lease")
+        Deamonset name for find to send webhook when lease change (default "kube-vip-cp-change-lease")
   -daemonset_path string
         When holder change, controller will find daemonset on that node and send POST request to that path (default "/leader")
   -daemonset_port string
         When holder change, controller will find daemonset on that node and send POST request to that port (default "8080")
   -endpoint string
-        HTTP server endpoint (default "0.0.0.0:8080")
+        HTTP server endpoint for health and return info with actual lease name (default "0.0.0.0:8080")
+  -h    Show help
   -https
         Send request to daemonset with https
-  -h    Show help
   -lease string
         Lease name for kube vip (default "plndr-cp-lock")
   -namespace string
         Namespace where DaemonSet are installed (default "kube-system")
+  -service_host string
+        If you not want to search Daemonset and simple send request to service. Set service host (default "")
 ```
 
 # Install

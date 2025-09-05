@@ -47,6 +47,7 @@ var (
 	kubeVipLeaseName   string
 	namespace          string
 	daemonSetName      string
+	serviceHost        string
 	clientSet          *kubernetes.Clientset
 	downloadFirstLease bool = false
 )
@@ -65,6 +66,7 @@ func main() {
 	kubeVipLeaseNameEnv := getEnv("KUBE_VIP_LEASE_NAME", "plndr-cp-lock")
 	namespaceEnv := getEnv("NAMESPACE", "kube-system")
 	daemonSetNameEnv := getEnv("DAEMONSET_NAME", "kube-vip-cp-change-lease")
+	serviceHostEnv := getEnv("SERVICE_HOST", "")
 
 	flag.StringVar(&endpoint, "endpoint", endpointEnv, "HTTP server endpoint for health and return info with actual lease name")
 	flag.StringVar(&sendRequestPort, "daemonset_port", sendRequestPortEnv, "When holder change, controller will find daemonset on that node and send POST request to that port")
@@ -72,7 +74,8 @@ func main() {
 
 	flag.StringVar(&kubeVipLeaseName, "lease", kubeVipLeaseNameEnv, "Lease name for kube vip")
 	flag.StringVar(&namespace, "namespace", namespaceEnv, "Namespace where DaemonSet are installed")
-	flag.StringVar(&daemonSetName, "daemonset_name", daemonSetNameEnv, "Deamonset name for find to send webhook when lease change, default: kube-vip-cp-change-lease")
+	flag.StringVar(&daemonSetName, "daemonset_name", daemonSetNameEnv, "Deamonset name for find to send webhook when lease change")
+	flag.StringVar(&serviceHost, "service_host", serviceHostEnv, "If you not want to search Daemonset and simple send request to service. Set service host")
 
 	// server advertise-route-primary
 	help := flag.Bool("h", false, "Show help")
@@ -92,8 +95,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	if daemonSetName == "" {
-		panic("Do not set daemonset name")
+	if daemonSetName == "" && serviceHost == "" {
+		panic("You have to set one of: daemonset_name and service_name")
 	}
 
 	// Get kubernetes client
@@ -236,7 +239,7 @@ func getCurrentLeaseHolder() (*coordinationv1.Lease, error) {
 	return lease, nil
 }
 
-func sendLeaseRequest(podIp string, LeaseName string) error {
+func sendLeaseRequest(destinationUrlOrIP string, LeaseName string) error {
 	fmt.Println("Start sending request")
 	data := map[string]string{
 		"holder_identity": LeaseName,
@@ -252,7 +255,7 @@ func sendLeaseRequest(podIp string, LeaseName string) error {
 		scheme = "https"
 	}
 
-	url := scheme + "://" + podIp + ":" + sendRequestPort + sendRequestPath
+	url := scheme + "://" + destinationUrlOrIP + ":" + sendRequestPort + sendRequestPath
 	fmt.Printf("Send request to: %s\n", url)
 	actualHolderChangedCounterCopy := actualHolderChangedCounter
 
@@ -343,16 +346,22 @@ func onLeaseHandlerChanged(lease *coordinationv1.Lease) error {
 	acquireTime = lease.Spec.AcquireTime.Unix()
 	actualHolderChangedCounter++
 
-	// Get pod on node
-	podIp := getPodIpByDaemonSetForever(lease.Spec.HolderIdentity)
+	// Get destination to send
+	var destinationServiceOrIp string
+	if serviceHost != "" {
+		destinationServiceOrIp = serviceHost
+		fmt.Printf("Sending requetst to service: %s", serviceHost)
+	} else {
+		destinationServiceOrIp = getPodIpByDaemonSetForever(lease.Spec.HolderIdentity)
+		if destinationServiceOrIp == "" {
+			return fmt.Errorf("Cant find pod ip for daemonset %s", daemonSetName)
+		}
+		fmt.Printf("For daemonSet %s, found pod ip: %s\n", daemonSetName, destinationServiceOrIp)
 
-	if podIp != "" {
-		fmt.Printf("For daemonSet %s, found pod ip: %s\n", daemonSetName, podIp)
-		go sendLeaseRequest(podIp, *lease.Spec.HolderIdentity)
-		return nil
 	}
 
-	return fmt.Errorf("Cant find pod ip for daemonset %s", daemonSetName)
+	go sendLeaseRequest(destinationServiceOrIp, *lease.Spec.HolderIdentity)
+	return nil
 }
 
 func watchLease() {
